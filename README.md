@@ -13,14 +13,44 @@ building detector and a dependency-free heuristic damage scorer. It also
 ships the *real* paper-faithful CNN (Twin-Tower Subtract) and a training
 script, so you can swap in a trained model once you have labeled data.
 
+## Visual overview
+
+```mermaid
+flowchart LR
+    A[Pre-event image] --> C[FastAPI backend]
+    B[Post-event image] --> C
+    C --> D[Building detection\nOpenCV or Faster R-CNN]
+    D --> E[Matched patch cropping\n161 x 161 pre/post patches]
+    E --> F[Normalization\nHistogram equalization]
+    F --> G[Damage scoring\nHeuristic, Twin-Tower CNN, or NVIDIA]
+    G --> H[JSON assessment report]
+    H --> I[Frontend map/canvas\nBuilding boxes and damage scores]
+```
+
+### Per-building analysis
+
+```mermaid
+flowchart TB
+    P[Pre-event building patch] --> N1[Normalize]
+    Q[Post-event building patch] --> N2[Normalize]
+    N1 --> S[Compare pre/post features]
+    N2 --> S
+    S --> R[Damage score 0–1]
+    R --> T{Damage threshold}
+    T -->|Below threshold| U[Undamaged]
+    T -->|At or above threshold| V[Potentially damaged]
+```
+
+## Project structure
+
 ```
 project/
 ├── backend/
 │   ├── main.py          FastAPI service (the API)
 │   ├── detector.py      Building detection (OpenCV + optional Faster R-CNN)
-│   ├── pipeline.py       Patch cropping, normalization, orchestration
-│   ├── model.py          Heuristic scorer + real TwinTowerCNN (PyTorch)
-│   ├── train.py          Training script for the real CNN
+│   ├── pipeline.py      Patch cropping, normalization, orchestration
+│   ├── model.py         Heuristic scorer + real TwinTowerCNN (PyTorch)
+│   ├── train.py         Training script for the real CNN
 │   └── requirements.txt
 ├── frontend/
 │   └── index.html        Self-contained web UI (no build step)
@@ -154,19 +184,15 @@ scenario where heavy manual cleanup isn't feasible.
 Two scorers, selected via the `DAMAGE_MODEL` environment variable:
 
 - **`heuristic` (default)** — no ML framework required. Blends three
-  classical signals between the pre/post patch: raw pixel difference (the
-  spirit of the paper's "subtract" combination), edge-density change
-  (collapsed roofs lose regular edges), and color-histogram shift (exposed
-  rubble/soil looks different from intact roofing). This is a *stand-in*,
-  not a trained model — good enough to make the whole app runnably
-  end-to-end, not good enough for real damage assessment.
+  classical signals between the pre/post patch: raw pixel difference, edge-
+  density change, and color-histogram shift. This is a *stand-in*, not a
+  trained model — good enough to make the app run end-to-end, not good
+  enough for real damage assessment.
 - **`cnn`** — the real **Twin-Tower Subtract (TTS)** architecture from the
   paper (`backend/model.py::build_twin_tower_cnn`). Two weight-shared
   convolutional towers independently encode the pre/post patch, their
   feature maps are subtracted element-wise, and a small head produces a
-  sigmoid damage score. This is the architecture that scored best in the
-  paper (AUC ≈ 0.83 on the Haiti dataset), beating single-tower and
-  concatenation variants.
+  sigmoid damage score.
 
   To use it:
   ```bash
@@ -183,38 +209,21 @@ Two scorers, selected via the `DAMAGE_MODEL` environment variable:
 The heuristic scorer is a placeholder. To get results resembling the
 paper's, you need labeled data and to train `TwinTowerCNN`.
 
-1. **Get imagery + labels.** Pre/post satellite images (e.g. via
-   [Google Earth Engine](https://earthengine.google.com) or a commercial
-   provider) and [UNOSAT/HDX](https://data.humdata.org) damage
-   assessments for a real disaster. The paper combines "Severe Damage" and
-   "Destroyed" into one positive class, and treats detected-but-unlabeled
-   buildings as negatives.
-
-2. **Generate patches.** Reuse `backend/pipeline.py`'s `crop_patch` and
-   `histogram_equalize` to turn each labeled building into a 161×161
-   pre/post patch pair. Save them as
+1. **Get imagery + labels.** Pre/post satellite images and [UNOSAT/HDX](https://data.humdata.org) damage assessments for a real disaster.
+2. **Generate patches.** Reuse `backend/pipeline.py`'s `crop_patch` and `histogram_equalize` to create 161×161 pre/post pairs:
    ```
    data_dir/
-     labels.csv          # patch_id,label
+     labels.csv
      pre/<patch_id>.png
      post/<patch_id>.png
    ```
-
 3. **Train.**
    ```bash
    cd backend
    pip install torch torchvision
    python train.py --data_dir /path/to/data_dir --epochs 20 --out tts_model.pt
    ```
-
-4. **Serve it.** Point the API at the checkpoint as shown above
-   (`DAMAGE_MODEL=cnn`, `MODEL_WEIGHTS=tts_model.pt`).
-
-5. **Cross-region tip from the paper:** a model trained on one disaster
-   generalizes poorly to a new one (AUC drops from ~0.8 to ~0.6). Training
-   on *two or more* disasters, then fine-tuning on a small sample (~10%)
-   of the target region, recovers most of the accuracy — worth
-   replicating if you're deploying across multiple events.
+4. **Serve it.** Set `DAMAGE_MODEL=cnn` and `MODEL_WEIGHTS=tts_model.pt`.
 
 ---
 
@@ -225,24 +234,8 @@ paper's, you need labeled data and to train `TwinTowerCNN`.
 { "status": "ok", "model_mode": "heuristic" }
 ```
 
-When running with NVIDIA mode:
-
-```json
-{ "status": "ok", "model_mode": "nvidia", "nvidia_model": "meta/llama-3.2-11b-vision-instruct" }
-```
-
 ### `POST /api/detect`
-Multipart form field: `image` (single file). Returns detected building
-boxes on that image only (no damage scoring).
-
-```json
-{
-  "image_size": [400, 400],
-  "buildings": [
-    { "id": "b0", "bbox": [40, 40, 100, 100], "centroid": [70, 70] }
-  ]
-}
-```
+Multipart form field: `image` (single file). Returns detected building boxes.
 
 ### `POST /api/infer`
 Multipart form fields: `pre_image`, `post_image`. Runs the full pipeline.
@@ -252,15 +245,7 @@ Multipart form fields: `pre_image`, `post_image`. Runs the full pipeline.
   "image_size": [400, 400],
   "model_mode": "heuristic",
   "summary": { "total_buildings": 4, "damaged": 1, "undamaged": 3 },
-  "buildings": [
-    {
-      "id": "b0",
-      "bbox": [40, 40, 100, 100],
-      "centroid": [70, 70],
-      "damage_score": 0.83,
-      "damaged": true
-    }
-  ]
+  "buildings": [{ "id": "b0", "damage_score": 0.83, "damaged": true }]
 }
 ```
 
@@ -268,41 +253,16 @@ Multipart form fields: `pre_image`, `post_image`. Runs the full pipeline.
 
 ## 5. Deploying beyond localhost
 
-- **Containerize:** wrap `backend/` in a `Dockerfile` (Python 3.11-slim +
-  `pip install -r requirements.txt` + `CMD uvicorn main:app --host 0.0.0.0
-  --port 8000`), push to a registry, deploy to any container platform
-  (Cloud Run, ECS, App Runner…).
-- **CI:** add a GitHub Actions workflow that runs `pytest ../tests` on
-  every push and builds the Docker image on merge to `main`.
-- **Serve the frontend statically:** `frontend/index.html` needs no build
-  step — host it on any static file server or CDN (S3 + CloudFront, GitHub
-  Pages, Netlify) and point `SENTINEL_API_BASE` at your deployed API.
-- **Security, before going further than a demo:** put the API behind
-  HTTPS, add auth (API keys or OAuth) to `/api/infer` and `/api/detect`,
-  restrict `CORSMiddleware`'s `allow_origins` in `main.py` to your actual
-  frontend domain, and store any satellite-provider or Earth Engine
-  credentials in a secrets manager rather than environment files checked
-  into git.
-- **Scale:** the pipeline processes one image pair per request; for large
-  areas, tile the input imagery and fan out requests across multiple
-  container instances (e.g. AWS Batch or a Kubernetes Job per tile), then
-  merge the per-tile building lists.
+- **Containerize:** wrap `backend/` in a Python 3.11-slim Docker image and run Uvicorn on port 8000.
+- **CI:** add a GitHub Actions workflow that runs `pytest ../tests` on every push.
+- **Serve the frontend statically:** host `frontend/index.html` on S3, CloudFront, GitHub Pages, Netlify, or another static host.
+- **Security:** use HTTPS, authenticate the API, restrict CORS to the frontend domain, and store provider credentials in a secrets manager.
+- **Scale:** tile large imagery and process tiles across multiple workers, then merge the per-tile building lists.
 
 ---
 
 ## 6. Known limitations (read before using on real imagery)
 
-- The default building detector (`detect_buildings_cv`) is a classical
-  contour detector, not a trained model — it will miss irregular or
-  densely packed buildings and can pick up non-building rectangular
-  shapes (parking lots, containers). Swap in `detect_buildings_frcnn`
-  (or better, a detector fine-tuned on building footprints) for anything
-  beyond a demo.
-- The default damage scorer (`heuristic_damage_score`) is a
-  pixel/edge/color heuristic, not a trained classifier — it's there so the
-  whole app is runnable with zero setup, not because it's an accurate
-  damage assessment tool. Train and serve the real `TwinTowerCNN` (§3)
-  before using this for anything operational.
-- Pre/post images must already be roughly aligned (same geographic area,
-  similar scale). The pipeline resizes post to match pre's dimensions but
-  does not perform geometric registration.
+- The default building detector is a classical contour detector, not a trained model. It can miss irregular or densely packed buildings and detect non-building rectangles.
+- The default damage scorer is a pixel/edge/color heuristic, not a trained classifier. Train and serve `TwinTowerCNN` before operational use.
+- Pre/post images must already be roughly aligned. The pipeline resizes the post image but does not perform geometric registration.
