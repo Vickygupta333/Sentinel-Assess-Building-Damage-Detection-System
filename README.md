@@ -1,27 +1,44 @@
 <div align="center">
 
-# 🛰️ Sentinel Assess
+<!-- Animated banner — rendered dynamically by an external SVG service -->
+<img src="https://capsule-render.vercel.app/api?type=waving&height=190&text=Sentinel%20Assess&fontSize=52&fontAlignY=38&desc=Building%20Damage%20Detection%20%26%20Assessment&descAlignY=64&descSize=18&color=0:020817,50:0b3b60,100:16a085&fontColor=ffffff&animation=twinkling" alt="Sentinel Assess animated header" />
 
-### Building Damage Detection &amp; Assessment System
-
-[![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)](https://opencv.org)
 [![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com)
 
-**Compare pre-event and post-event imagery. Detect buildings. Quantify potential damage.**
+**Compare pre-event and post-event imagery · Detect buildings · Quantify potential damage**
 
 [🚀 Quick Start](#-quick-start) · [🎯 Features](#-features) · [🏗️ Architecture](#-architecture) · [📡 API](#-api-reference) · [⚠️ Limitations](#-known-limitations)
 
-<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=24&duration=2600&pause=800&color=58A6FF&center=true&vCenter=true&width=780&lines=Satellite+imagery+%E2%86%92+Building+detector;Building+patches+%E2%86%92+Damage+scoring;Pre%2Fpost+analysis+%E2%86%92+Actionable+report" alt="Animated Sentinel Assess workflow" />
+<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=24&duration=2200&pause=700&color=58A6FF&center=true&vCenter=true&width=820&lines=Satellite+imagery+%E2%86%92+Building+detector;Building+patches+%E2%86%92+Damage+scoring;Pre%2Fpost+analysis+%E2%86%92+Actionable+report" alt="Animated Sentinel Assess workflow" />
 
 </div>
 
----
-
 > [!NOTE]
 > Sentinel Assess is an end-to-end building damage assessment prototype that can run fully offline. It uses a classical OpenCV detector by default, with optional Faster R-CNN and Twin-Tower CNN paths for stronger models.
+
+## 🌐 Visual Overview
+
+<div align="center">
+
+### 🛰️ From two satellite views to an assessment report
+
+<img src="https://img.shields.io/badge/01-PRE-EVENT-58A6FF?style=for-the-badge&logo=satellite&logoColor=white" />
+<strong>&nbsp;➜&nbsp; Detect &nbsp;➜&nbsp;</strong>
+<img src="https://img.shields.io/badge/02-MATCH-PATCHES-F0883E?style=for-the-badge&logo=openstreetmap&logoColor=white" />
+<strong>&nbsp;➜&nbsp; Compare &nbsp;➜&nbsp;</strong>
+<img src="https://img.shields.io/badge/03-DAMAGE-SCORE-DA3633?style=for-the-badge&logo=probot&logoColor=white" />
+<strong>&nbsp;➜&nbsp; Report &nbsp;➜&nbsp;</strong>
+<img src="https://img.shields.io/badge/04-DECISION-MAP-3FB950?style=for-the-badge&logo=leaflet&logoColor=white" />
+
+<br />
+
+<img src="https://github-readme-streak-stats.herokuapp.com/?user=Vickygupta333&theme=tokyonight&hide_border=true&border_radius=12&background=0D1117&ring=58A6FF&fire=F0883E&currStreakLabel=58A6FF" alt="GitHub contribution streak" />
+
+</div>
 
 ## 🌟 Features
 
