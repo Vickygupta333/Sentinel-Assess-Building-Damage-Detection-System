@@ -20,26 +20,6 @@
 > [!NOTE]
 > Sentinel Assess is an end-to-end building damage assessment prototype that can run fully offline. It uses a classical OpenCV detector by default, with optional Faster R-CNN and Twin-Tower CNN paths for stronger models.
 
-## 🌐 Visual Overview
-
-<div align="center">
-
-### 🛰️ From two satellite views to an assessment report
-
-<img src="https://img.shields.io/badge/01-PRE-EVENT-58A6FF?style=for-the-badge&logo=satellite&logoColor=white" />
-<strong>&nbsp;➜&nbsp; Detect &nbsp;➜&nbsp;</strong>
-<img src="https://img.shields.io/badge/02-MATCH-PATCHES-F0883E?style=for-the-badge&logo=openstreetmap&logoColor=white" />
-<strong>&nbsp;➜&nbsp; Compare &nbsp;➜&nbsp;</strong>
-<img src="https://img.shields.io/badge/03-DAMAGE-SCORE-DA3633?style=for-the-badge&logo=probot&logoColor=white" />
-<strong>&nbsp;➜&nbsp; Report &nbsp;➜&nbsp;</strong>
-<img src="https://img.shields.io/badge/04-DECISION-MAP-3FB950?style=for-the-badge&logo=leaflet&logoColor=white" />
-
-<br />
-
-<img src="https://github-readme-streak-stats.herokuapp.com/?user=Vickygupta333&theme=tokyonight&hide_border=true&border_radius=12&background=0D1117&ring=58A6FF&fire=F0883E&currStreakLabel=58A6FF" alt="GitHub contribution streak" />
-
-</div>
-
 ## 🌟 Features
 
 <table>
