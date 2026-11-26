@@ -1,112 +1,189 @@
-# Sentinel Assess — Building Damage Detection
+<div align="center">
 
-A working, end-to-end implementation of the pipeline described in
-*Xu et al., "Building Damage Detection in Satellite Imagery Using
-Convolutional Neural Networks" (NeurIPS 2019)*: upload matched
-before/after satellite (or drone/aerial) images of an area, and the system
-detects buildings, crops matched pre/post patches, and scores each one for
-disaster damage.
+# 🛰️ Sentinel Assess
 
-It runs **fully offline out of the box** — no pretrained weights, no
-internet access, no GPU required — using a classical computer-vision
-building detector and a dependency-free heuristic damage scorer. It also
-ships the *real* paper-faithful CNN (Twin-Tower Subtract) and a training
-script, so you can swap in a trained model once you have labeled data.
+### Building Damage Detection &amp; Assessment System
 
-## Visual overview
+[![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)](https://opencv.org)
+[![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com)
 
-```mermaid
-flowchart LR
-    A[Pre-event image] --> C[FastAPI backend]
-    B[Post-event image] --> C
-    C --> D[Building detection\nOpenCV or Faster R-CNN]
-    D --> E[Matched patch cropping\n161 x 161 pre/post patches]
-    E --> F[Normalization\nHistogram equalization]
-    F --> G[Damage scoring\nHeuristic, Twin-Tower CNN, or NVIDIA]
-    G --> H[JSON assessment report]
-    H --> I[Frontend map/canvas\nBuilding boxes and damage scores]
-```
+**Compare pre-event and post-event imagery. Detect buildings. Quantify potential damage.**
 
-### Per-building analysis
+[🚀 Quick Start](#-quick-start) · [🎯 Features](#-features) · [🏗️ Architecture](#-architecture) · [📡 API](#-api-reference) · [⚠️ Limitations](#-known-limitations)
 
-```mermaid
-flowchart TB
-    P[Pre-event building patch] --> N1[Normalize]
-    Q[Post-event building patch] --> N2[Normalize]
-    N1 --> S[Compare pre/post features]
-    N2 --> S
-    S --> R[Damage score 0–1]
-    R --> T{Damage threshold}
-    T -->|Below threshold| U[Undamaged]
-    T -->|At or above threshold| V[Potentially damaged]
-```
+<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=24&duration=2600&pause=800&color=58A6FF&center=true&vCenter=true&width=780&lines=Satellite+imagery+%E2%86%92+Building+detector;Building+patches+%E2%86%92+Damage+scoring;Pre%2Fpost+analysis+%E2%86%92+Actionable+report" alt="Animated Sentinel Assess workflow" />
 
-## Project structure
-
-```
-project/
-├── backend/
-│   ├── main.py          FastAPI service (the API)
-│   ├── detector.py      Building detection (OpenCV + optional Faster R-CNN)
-│   ├── pipeline.py      Patch cropping, normalization, orchestration
-│   ├── model.py         Heuristic scorer + real TwinTowerCNN (PyTorch)
-│   ├── train.py         Training script for the real CNN
-│   └── requirements.txt
-├── frontend/
-│   └── index.html        Self-contained web UI (no build step)
-└── tests/
-    └── test_pipeline.py  Unit + API tests (pytest)
-```
+</div>
 
 ---
 
-## 1. Quick start (5 minutes)
+> [!NOTE]
+> Sentinel Assess is an end-to-end building damage assessment prototype that can run fully offline. It uses a classical OpenCV detector by default, with optional Faster R-CNN and Twin-Tower CNN paths for stronger models.
 
-### Backend
+## 🌟 Features
+
+<table>
+<tr>
+<td width="50%">
+
+### 🏘️ Building Detection
+
+- OpenCV Canny + contour detection
+- Optional Faster R-CNN pipeline
+- Automatic building-boundary extraction
+- Real-world coordinate mapping support
+
+</td>
+<td width="50%">
+
+### 📊 Damage Analysis
+
+- Pre/post image pair matching
+- 161 × 161 patch extraction
+- Per-channel histogram equalization
+- Normalized 0–1 damage score
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 🧠 Flexible Scoring
+
+- **Heuristic:** lightweight pixel, edge, and color analysis
+- **CNN:** Twin-Tower subtract architecture
+- Optional NVIDIA hosted vision model
+
+</td>
+<td>
+
+### 🗺️ Visual Reporting
+
+- Interactive map and canvas frontend
+- Building boxes and damage labels
+- JSON assessment results
+- Synthetic demo mode
+
+</td>
+</tr>
+</table>
+
+## 🏗️ Architecture
+
+```mermaid
+flowchart LR
+    A[(🛰️ Pre-event imagery)] --> C[FastAPI backend]
+    B[(🛰️ Post-event imagery)] --> C
+
+    C --> D{Building detector}
+    D -->|OpenCV| E[Detected footprints]
+    D -->|Faster R-CNN| E
+
+    E --> F[Matched 161 × 161 patches]
+    F --> G[Normalize & equalize]
+    G --> H{Damage scorer}
+
+    H -->|Heuristic| I[Pixel · Edge · Color]
+    H -->|Twin-Tower CNN| J[Learned features]
+    H -->|NVIDIA| K[Hosted vision model]
+
+    I --> L[Damage score 0–1]
+    J --> L
+    K --> L
+    L --> M[(JSON report)]
+    M --> N[Map / Canvas UI]
+
+    style A fill:#0d1117,stroke:#58a6ff,color:#c9d1d9
+    style B fill:#0d1117,stroke:#58a6ff,color:#c9d1d9
+    style C fill:#161b22,stroke:#2f81f7,color:#c9d1d9
+    style L fill:#3d2d00,stroke:#d29922,color:#fff
+    style N fill:#16321f,stroke:#3fb950,color:#fff
+```
+
+## 🔄 Analysis Workflow
+
+```mermaid
+sequenceDiagram
+    actor Operator
+    participant UI as Web UI
+    participant API as FastAPI
+    participant CV as OpenCV Pipeline
+    participant Model as Damage Scorer
+
+    Operator->>UI: Upload pre/post imagery
+    UI->>API: POST /api/infer
+    API->>CV: Detect & crop buildings
+    CV->>CV: Match patches
+    CV->>CV: Normalize imagery
+    CV->>Model: Send paired patches
+    Model-->>API: Scores + classifications
+    API-->>UI: Assessment JSON
+    UI-->>Operator: Boxes, labels & summary
+```
+
+## 📁 Project Structure
+
+```text
+Sentinel-Assess-Building-Damage-Detection-System/
+├── backend/
+│   ├── main.py          # FastAPI service and API routes
+│   ├── detector.py      # OpenCV and Faster R-CNN detectors
+│   ├── pipeline.py      # Cropping, normalization, orchestration
+│   ├── model.py         # Heuristic + Twin-Tower CNN scoring
+│   ├── train.py         # CNN training script
+│   └── requirements.txt # Backend dependencies
+├── frontend/
+│   ├── index.html       # Static web interface
+│   └── package.json
+├── tests/
+│   └── test_pipeline.py # Unit and API tests
+└── docker-compose.yml
+```
+
+## 🚀 Quick Start
+
+### 🐳 Docker
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:8000` for the API and `http://localhost:5500` for the frontend, depending on your local Compose configuration.
+
+### 🐍 Backend
 
 ```bash
 cd backend
-python -m venv .venv && source .venv/bin/activate   # optional but recommended
+python -m venv .venv
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-Use NVIDIA hosted free-tier vision model instead of local scoring:
-
-```bash
-cd backend
-set DAMAGE_MODEL=nvidia
-set NVIDIA_API_KEY=nvapi-your-key
-set NVIDIA_MODEL=meta/llama-3.2-11b-vision-instruct
-uvicorn main:app --reload --port 8000
-```
-
-You should see `Uvicorn running on http://127.0.0.1:8000`. Check it:
+Verify the service:
 
 ```bash
 curl http://localhost:8000/health
-# {"status":"ok","model_mode":"heuristic"}
 ```
 
-### Frontend
+### 🌐 Frontend
 
-The frontend is a single static HTML file — no npm install, no build step.
+The frontend is a dependency-free static HTML application:
 
 ```bash
 cd frontend
 python -m http.server 5500
 ```
 
-Open `http://localhost:5500` in a browser. Click **"Load a synthetic demo
-scene"** to try it immediately without any real imagery, or upload your own
-matched pre/post images and click **Run assessment**.
+Open `http://localhost:5500` and choose **Load a synthetic demo scene** for an instant walkthrough.
 
-> If your backend isn't on `http://localhost:8000`, set
-> `window.SENTINEL_API_BASE = "https://your-api-host"` in a small
-> `<script>` tag before `index.html`'s closing `</body>`, or edit the
-> `API_BASE` constant near the top of the `<script>` block.
+> [!TIP]
+> Before opening the frontend, set `window.SENTINEL_API_BASE` in `index.html` if the API is hosted on another origin.
 
-### Run the tests
+## 🧪 Run Tests
 
 ```bash
 cd backend
@@ -114,155 +191,126 @@ pip install pytest
 python -m pytest ../tests -q
 ```
 
-All 6 tests should pass — they cover patch cropping, histogram
-equalization, building detection, the heuristic damage scorer, the full
-pipeline, and the `/api/infer` endpoint.
-
----
-
-## 2. How it works (pipeline)
-
-This mirrors Figure 1 of the paper:
-
-```
-pre/post images
-      │
-      ▼
-[1] Building Detection   — find every building-like structure on the pre image
-      │
-      ▼
-[2] Patch Cropping        — crop a matched pre + post patch around each building
-      │
-      ▼
-[3] Normalization          — per-channel histogram equalization on both patches
-      │
-      ▼
-[4] Damage Scoring          — compare pre/post patch → score in [0, 1]
-      │
-      ▼
-Per-building damage report (JSON) → rendered on the map/canvas
-```
-
-### Step 1 — Building detection (`backend/detector.py`)
-
-Two implementations are provided:
-
-- **`detect_buildings_cv` (default, active)** — a classical detector using
-  Canny edge detection + contour finding + non-max suppression. It needs no
-  pretrained weights and no internet access, which is why the whole app
-  works offline. It finds real rectangular structures in the image (not a
-  static grid), but is far less accurate than a trained detector.
-- **`detect_buildings_frcnn` (production path)** — torchvision's pretrained
-  Faster R-CNN, exactly as described in the paper and the original project
-  plan. Requires `pip install torch torchvision` and internet access (or a
-  cached checkpoint) to download COCO weights on first run. In practice
-  you'd fine-tune this on a building-footprint dataset (e.g. via
-  [xBD](https://xview2.org)) rather than using raw COCO classes, since COCO
-  has no "building" class.
-
-To switch, change the `detector=` argument passed to `run_assessment()` in
-`backend/main.py`.
-
-### Step 2 — Patch cropping (`backend/pipeline.py::crop_patch`)
-
-For every detected building, a square patch is cropped from both the pre-
-and post-event image, centered on the building's centroid. The paper uses
-161×161 px at 0.3 m resolution (≈50 m × 50 m on the ground); the code
-defaults to the same `PATCH_SIZE = 161`. Patches that fall near the image
-edge are reflection-padded rather than dropped, so every detected building
-gets a usable crop.
-
-### Step 3 — Normalization (`backend/pipeline.py::histogram_equalize`)
-
-Per-channel histogram equalization, exactly as described in the paper's
-data-generation section — this is the *only* preprocessing step, kept
-deliberately minimal so it stays practical in a real disaster-response
-scenario where heavy manual cleanup isn't feasible.
-
-### Step 4 — Damage scoring (`backend/model.py`)
-
-Two scorers, selected via the `DAMAGE_MODEL` environment variable:
-
-- **`heuristic` (default)** — no ML framework required. Blends three
-  classical signals between the pre/post patch: raw pixel difference, edge-
-  density change, and color-histogram shift. This is a *stand-in*, not a
-  trained model — good enough to make the app run end-to-end, not good
-  enough for real damage assessment.
-- **`cnn`** — the real **Twin-Tower Subtract (TTS)** architecture from the
-  paper (`backend/model.py::build_twin_tower_cnn`). Two weight-shared
-  convolutional towers independently encode the pre/post patch, their
-  feature maps are subtracted element-wise, and a small head produces a
-  sigmoid damage score.
-
-  To use it:
-  ```bash
-  pip install torch torchvision
-  export DAMAGE_MODEL=cnn
-  export MODEL_WEIGHTS=/path/to/tts_model.pt
-  uvicorn main:app --reload --port 8000
-  ```
-
----
-
-## 3. Training the real CNN on real data
-
-The heuristic scorer is a placeholder. To get results resembling the
-paper's, you need labeled data and to train `TwinTowerCNN`.
-
-1. **Get imagery + labels.** Pre/post satellite images and [UNOSAT/HDX](https://data.humdata.org) damage assessments for a real disaster.
-2. **Generate patches.** Reuse `backend/pipeline.py`'s `crop_patch` and `histogram_equalize` to create 161×161 pre/post pairs:
-   ```
-   data_dir/
-     labels.csv
-     pre/<patch_id>.png
-     post/<patch_id>.png
-   ```
-3. **Train.**
-   ```bash
-   cd backend
-   pip install torch torchvision
-   python train.py --data_dir /path/to/data_dir --epochs 20 --out tts_model.pt
-   ```
-4. **Serve it.** Set `DAMAGE_MODEL=cnn` and `MODEL_WEIGHTS=tts_model.pt`.
-
----
-
-## 4. API reference
+## 📡 API Reference
 
 ### `GET /health`
+
 ```json
-{ "status": "ok", "model_mode": "heuristic" }
+{
+  "status": "ok",
+  "model_mode": "heuristic"
+}
 ```
 
 ### `POST /api/detect`
-Multipart form field: `image` (single file). Returns detected building boxes.
+
+Accepts a multipart `image` file and returns detected building boxes.
 
 ### `POST /api/infer`
-Multipart form fields: `pre_image`, `post_image`. Runs the full pipeline.
+
+Accepts pre-event and post-event images as `pre_image` and `post_image`.
 
 ```json
 {
   "image_size": [400, 400],
   "model_mode": "heuristic",
-  "summary": { "total_buildings": 4, "damaged": 1, "undamaged": 3 },
-  "buildings": [{ "id": "b0", "damage_score": 0.83, "damaged": true }]
+  "summary": {
+    "total_buildings": 4,
+    "damaged": 1,
+    "undamaged": 3
+  },
+  "buildings": [
+    {
+      "id": "b0",
+      "damage_score": 0.83,
+      "damaged": true
+    }
+  ]
 }
 ```
 
+## 🤖 Scoring Modes
+
+| Mode | Requirements | Best for |
+|:--|:--|:--|
+| `heuristic` | Python + OpenCV | Fast offline demos |
+| `cnn` | PyTorch + weights | Labeled building-damage datasets |
+| `nvidia` | NVIDIA API credentials | Optional hosted vision inference |
+
+### Enable the CNN
+
+```bash
+pip install torch torchvision
+export DAMAGE_MODEL=cnn
+export MODEL_WEIGHTS=/path/to/tts_model.pt
+uvicorn main:app --reload --port 8000
+```
+
+### NVIDIA Hosted Vision
+
+```bash
+export DAMAGE_MODEL=nvidia
+export NVIDIA_API_KEY=nvap-your-key
+export NVIDIA_MODEL=meta/llama-3.2-11b-vision-instruct
+```
+
+## 🎓 Train the Twin-Tower CNN
+
+```bash
+cd backend
+pip install torch torchvision
+python train.py --data_dir /path/to/data_dir --epochs 20 --out tts_model.pt
+```
+
+Expected labeled dataset structure:
+
+```text
+data_dir/
+├── labels.csv
+├── pre/<patch_id>.png
+└── post/<patch_id>.png
+```
+
+## ⚠️ Known Limitations
+
+- The default contour detector is not a trained building segmentation model.
+- The default heuristic is exploratory, not an operational damage classifier.
+- Satellite images should be roughly aligned before analysis.
+- The current pipeline does not perform geometric registration or orthorectification.
+- Train and validate the Twin-Tower CNN with a real disaster dataset before production use.
+
+## 🚢 Deployment Checklist
+
+- [ ] Containerize the complete application
+- [ ] Run tests automatically in GitHub Actions
+- [ ] Deploy the frontend to a static host
+- [ ] Restrict CORS to the frontend domain
+- [ ] Store API credentials in a secrets manager
+- [ ] Tile large imagery and process tiles concurrently
+
+## 🤝 Contributing
+
+Contributions are welcome. Please open an issue with proposed changes before submitting a pull request.
+
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new behavior
+4. Open a pull request with screenshots or sample output
+
+## 📜 License
+
+No license is currently included. Add a license before distributing or using this project beyond personal experimentation.
+
 ---
 
-## 5. Deploying beyond localhost
+<div align="center">
 
-- **Containerize:** wrap `backend/` in a Python 3.11-slim Docker image and run Uvicorn on port 8000.
-- **CI:** add a GitHub Actions workflow that runs `pytest ../tests` on every push.
-- **Serve the frontend statically:** host `frontend/index.html` on S3, CloudFront, GitHub Pages, Netlify, or another static host.
-- **Security:** use HTTPS, authenticate the API, restrict CORS to the frontend domain, and store provider credentials in a secrets manager.
-- **Scale:** tile large imagery and process tiles across multiple workers, then merge the per-tile building lists.
+**Built for faster, more accessible post-disaster building assessment**
 
----
+<a href="https://github.com/Vickygupta333/Sentinel-Assess-Building-Damage-Detection-System/stargazers">⭐ Star this project</a>
+·
+<a href="https://github.com/Vickygupta333/Sentinel-Assess-Building-Damage-Detection-System/issues">🐛 Report an issue</a>
+·
+<a href="https://github.com/Vickygupta333/Sentinel-Assess-Building-Damage-Detection-System/fork">🍴 Fork it</a>
 
-## 6. Known limitations (read before using on real imagery)
-
-- The default building detector is a classical contour detector, not a trained model. It can miss irregular or densely packed buildings and detect non-building rectangles.
-- The default damage scorer is a pixel/edge/color heuristic, not a trained classifier. Train and serve `TwinTowerCNN` before operational use.
-- Pre/post images must already be roughly aligned. The pipeline resizes the post image but does not perform geometric registration.
+</div>
